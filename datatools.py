@@ -615,8 +615,139 @@ def calc_energy(data):
     ek = ne.evaluate("sum(rho * area * speed * speed, 1)")
     ek = ek / 4     
     data['ek'] = ek
-    print ek.shape
     return data
-        
-  
+    
+def size_check(datadir):
+	"""Used in ncMerger.  Determines the total number of time series for a
+	number of .nc files in a directory
+	
+	:Parameters:
+		**datadir** -- The directory where the .nc files are contained.  
+	
+	"""
+    files = glob.glob(datadir + '*.nc')
+	numFiles = len(files)
+	ncid = netcdf.netcdf_file(files[0])
+	nele = ncid.dimensions['nele']
+	node = ncid.dimensions['node']
+	ncid.close()
+	timeDim = 0
+	for i in xrange(numFiles):
+		ncid = netcdf.netcdf_file(files[i])
+		timeDim += len(ncid.variables['time'].data)
+		ncid.close()
+	return nele, node, timeDim
+	
+def time_sorter(datadir):
+	"""Used in ncMerger.  Sorts the output of glob (which has no inherent 
+	order) so that the files can be loaded chronologically.
+	
+	:Parameters:
+		**datadir** -- The directory where the .nc files are contained.
+		
+	:Returns:
+		**ordered_time** -- A list of indices that sort the output of glob.
+	"""
+	files = glob.glob(datadir + "*.nc")
+	first_time = np.zeros(len(files))
+	for i in xrange(len(files)):
+		ncid = netcdf.netcdf_file(files[i])
+		first_time[i] = ncid.variables['time'][0]
+		ncid.close()
+	ordered_time = first_time.argsort()
+	return ordered_time
+
+def nan_index(data, dim='2D'):
+	"""Used in ncMerger. Determines, for a given data set, what time series
+	contain nans.  Also calculates the fraction of
+	a data set that is nans (a measure of the 'goodness' of
+	the data set). 
+	
+	:Parameters:
+		**data** -- The typical python data dictionary, containing 
+		merged data.
+		
+		**dim = {'2D', '3D'}** -- The dimension of the data.
+	
+	:Returns:
+		**nanInd** -- A list containing the time series that contain nans
+		
+		**nanFrac** -- The fraction of nans in a given time series.
+	"""
+	#name necessary variables
+	#initialize list of nan-containing time series
+	nanInd = []
+	key = ['ua', 'va']
+	if dim == '3D':
+		three_d =['u', 'v', 'ww']
+		
+	for i in xrange(data['time'].shape[0]):
+		checkArray = []
+		for j in key:
+			checkArray.append(np.isnan(np.sum(data[j][i,:])))
+		if dim == '3D':
+			for p in key:
+				checkArray.append(np.isnan(np.sum(data[p][i,:,:])))
+		if True in checkArray:
+			nanInd.append(i)
+	#calculate percentage of nans
+	nanFrac = len(nanInd)/len(time)
+	return nanInd, nanFrac	
+
+def merge_nc(datadir, savedir, clean_nans = False, intelligent=False, \
+	dim='2D'):
+	"""Merge data for all .nc files in a particular directory.  Assumes
+	that all the data has the same nele, node (i.e. is for the same grid)
+	
+	:Parameters: 
+		**datadir** -- The directory where the .nc files are contained.
+		
+		**savedir** -- The directory where the output should be saved.
+		
+		**clean_nans = {True, False}** -- Optional. If set to True, 
+			any time series that contain nans in the data series will be 
+			stripped.  Will result in slightly slower code.
+		
+		**intelligent = {True, False}** -- Optional.  This is only useful 
+			for  data files that have overlap.  If set to True, and two 
+			time series overlap, the code will select the time series 
+			with the smallest nanFrac.  This will result in a noticable 
+			slowdown.  Sets clean_nans to True.  
+		
+		**dim ={'2D', '3D'} ** -- Optional.  The dimension of the datafile,
+			assumed to be 2D unless otherwise specified.
+			
+	"""
+	#generate a list of all files in the directory
+	files = glob.glob(datadir + '*.nc')
+	numFiles = len(files)
+	#get the proper indices to load the files.
+	ordered_time = time_sorter(datadir)
+	#load the first file
+	singlename = os.path.basename(files[ordered_time[0]])
+	data = loadnc(datadir, singlename=singlename, dim)
+	#name the variables that will be used, according to dimension
+	if dim == '2D':
+		key = ['time', 'ua', 'va', 'zeta']
+	elif dim == '3D':
+		key = ['time', 'ua', 'va', 'zeta', 'u', 'v', 'ww']
+	else: 
+		raise Exception('Dim must be 2D or 3D.  Correct this in your \
+			call to nc_merge.')	
+	#get the dimensions we will need.
+	nele, node, timeDim = size_check(datadir)
+	
+	#pre-allocate arrays that we will dump the data in, for speed.
+	Time = np.zeros(timeDim)
+	UA = np.zeros((timeDim, nele))
+	VA = np.zeros((timeDim, nele))
+	ZETA = np.zeros((timeDim, node))
+	if dim == '3D':
+		3rd_dim = data[u].shape[1]
+		U = np.zeros((timeDim, 3rd_dim, nele))
+		V = np.zeros((timeDim, 3rd_dim, nele))
+	
+	
+	
+	
     
