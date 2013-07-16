@@ -1,14 +1,33 @@
 # -*- coding: utf-8 -*-
 """
+Front Matter
+=============
+
 Created on Fri Jun 21 12:42:46 2013
 
-@author: robie hennigar
+Author: Robie Hennigar
 
 A compilation of functions that are used for analysing the data 
 contained in .nc files.
 
-@Requirements:
-    Matplotlib version 1.3.0
+Requirements
+===================================
+Absolutely Necessary:
+
+* Numpy
+* SciPy
+* Matplotlib version 1.3.0
+* Numexpr
+
+Optional, but recommended:
+
+* Numba
+
+.. Note:: A convenient package that is both easy to install and contains nearly all the required packages for the python code herein is Anaconda (available here http://www.continuum.io/downloads).  Note that if you choose to use  Anaconda, it is necessary to install matplotlib v1.3.0  manually, as Anaconda comes with an older version.
+
+
+Functions
+=========
 """
 #load modules
 #Numerical modules
@@ -25,14 +44,15 @@ import scipy.io as sio
 
 
 def loadnc(datadir, singlename=None, dim='2D'):
-    """
-    Loads a .nc  data file
+    """Loads a .nc  data file
     
-    @parameters:
-        datadir: the path to the directory where the data is stored
-        singlename (optional): the name of the .nc file of interest,
+    :Parameters: 
+    	**datadir** -- The path to the directory where the data is stored. 
+    	
+    	**singlename (optional)** -- the name of the .nc file of interest,
             not needed if there is only one .nc file in datadir
-        dim = {'2D', '3D'} (optional): the dimension of the data of
+        
+        **dim = {'2D', '3D'} (optional)** -- The dimension of the data of
             interest.  Default is 2D for a 2D data file.  
     """
     #identify the file to load
@@ -104,13 +124,13 @@ def loadnc(datadir, singlename=None, dim='2D'):
     return data
         
 def ncdatasort(data):
-    """
-    From the nc data provided, common variables are produced.
+    """From the nc data provided, common variables are produced.
     
-    @Parameters:
-        data: a data dictionary of data from a .nc file
-    @Out
-        variables produced are: uvnode and uvnodell
+    :Parameters: **data** -- a data dictionary of data from a .nc file
+         
+	| 
+	       
+    :Returns: **data** -- Python data dictionary updated to include uvnode and uvnodell
     """
 
     nodexy = np.zeros((len(data['x']),2))
@@ -141,20 +161,16 @@ def ncdatasort(data):
     
     return data
 def tri_finder(XY, data):
-    """
-    Determines which element a given X, Y value is in.  
+    """Determines which element a given X, Y value is in.
     
-    @Inputs:
-        XY: an N x 2 dimensional array of points to locate in triangles.
-            The first column consists of the x coordinate (long), while
-            the second column consists of the y coordinate (lat)
-        data: dictionary containing all the data from the .nc file
-    @Returns:
-        indices: a list of indices, in order, giving the triangle that 
-        each x,y pair of XY belongs to
+    :Parameters: **XY** -- an N x 2 dimensional array of points to locate in triangles. The first column consists of the x coordinate (long), while the second column consists of the y coordinate (lat).
+    
+	**data** -- dictionary containing all the data from the .nc file.
+	
+    :Returns: **indicies** -- a list of indices, in order, giving the 			triangle that each x,y pair of XY belongs to.
         
-    Note: if indices contains -1, this means that the cooresponding XY 
-        value did not belong to any of the elements
+    .. Note:: if indices contains -1, this means that the cooresponding XY 
+        value did not belong to any of the elements.
     """
     
     #get the relevant variables
@@ -179,20 +195,19 @@ def tri_finder(XY, data):
 
                      
 def interp_vel(XY, triInds, data, numjit=False):
-    """
-    Interpolates velocity data from the known locations to the x, y
+    """Interpolates velocity data from the known locations to the x, y
     coordinates given in the array XY.
-    @Inputs:
-        XY: Nx2 array of x, y values (in long/lat) where the velocity 
-            should be interpolated to.
-        TriInds: indices of the triangles that each XY point belongs to.
-            This is returned by tri_finder.
-        data: Typical data dictionary returned by loadnc or ncdatasort.
-        jit = {True, False} (optional): Optional just in time compilation of
-            code.  This is very worthwhile for larger datasets as the 
-            compiled code runs much faster.  Requires Numba.
     
-    NOTE: Since this contains a (potentially large) for loop, the first 
+    :Parameters:
+        **XY** -- Nx2 array of x, y values (in long/lat) where the velocity should be interpolated to.
+        
+        **TriInds** -- indices of the triangles that each XY point belongs to.  This is returned by tri_finder.
+        
+        **data** -- Typical data dictionary returned by loadnc or ncdatasort.
+        
+        **jit = {True, False} (optional)** -- Optional just in time compilation of code.  This is very worthwhile for larger datasets as the compiled code runs much faster.  Requires Numba.
+    
+    .. Note:: Since this contains a (potentially large) for loop, the first 
         call of the code will be slow.  For faster interpolation 
         (10-100 times faster) install Numba and make use of the jit (just in
         time) compilation feature.
@@ -262,7 +277,7 @@ def interp_vel(XY, triInds, data, numjit=False):
 
 def jit_interp_vel(XY, triInds, u, v, uvnodell, a1u, a2u, nbe, nv):
     """
-    This function is not meant to be called by the user. Use "interp_vel".
+    .. warning:: This function is not meant to be called by the user. Use "interp_vel".
     """
     i = 0
     lnv = len(nv[:,0])
@@ -301,8 +316,7 @@ def jit_interp_vel(XY, triInds, u, v, uvnodell, a1u, a2u, nbe, nv):
     return UI, VI
     
 def get_elements(data, region):
-    """
-    Takes uvnodes and a  region (specified by the corners of a
+    """Takes uvnodes and a  region (specified by the corners of a
     rectangle) and determines the elements of uvnode that lie within the
     region
     """
@@ -315,8 +329,7 @@ def get_elements(data, region):
     return elements
     
 def get_nodes(data, region):
-    """
-    Takes nodexy and a region (specified by the corners of a rectangle)
+    """Takes nodexy and a region (specified by the corners of a rectangle)
     and determines the nodes that lie in the region
     """
     nodexy = data['nodell']
@@ -339,17 +352,19 @@ def regioner(region, data, name=None, savedir=None, dim='2D'):
     and returns only the data that lies within the region specified
     in the region array
     
-    @Parameters:
-        region: four element array containing the four corners of the 
+    :Parameters:
+        **region** -- four element array containing the four corners of the 
             region box.  Entires should be in the following form:
             [long1, long2, lat1, lat2] with the following property:
             abs(long1) < abs(long2), etc.
-        data: standard python data dictionary for these files
-        name: what should  the region be called in the output file?
-        savedir: where should the resultant data be saved? Default is none,
-            i.e. the data will not be saved, only returned.
-        dim = {'2D', '3D'}: the dimension of the data to use regioner on.  
-            Default is 2D.
+        
+        **data** -- standard python data dictionary for these files
+        
+        **name** -- what should  the region be called in the output file?
+        
+        **savedir** -- where should the resultant data be saved? Default is 			none, i.e. the data will not be saved, only returned.
+        
+        **dim = {'2D', '3D'}** the dimension of the data to use regioner 				on.  Default is 2D.
     """
     #short name for relevant variables
     
@@ -458,11 +473,13 @@ def mat_save(data, saveDirName, dim='2D'):
     """
     Save .nc data to a mat file.
     
-    @Parameters:
-        data: the standard data dictionary
-        saveDirName the path to where the data should be saved,
+    :Parameters:
+        **data** -- the standard data dictionary
+        
+        **saveDirName** -- the path to where the data should be saved,
         along with the name. Ex: "/home/user/Desktop/data.mat"
-        dim ={'2D', '3D'} (optional): the dimension of the data file.
+        
+        **dim ={'2D', '3D'} (optional)** -- the dimension of the data file.
         
     """
     dtype = float  
@@ -496,14 +513,63 @@ def mat_save(data, saveDirName, dim='2D'):
         raise Exception("Dim must be '2D', '3D', or absent.")
     sio.savemat(saveDirName, rdata, oned_as='column')
     
+def h5_save(data, savedir, filename, cast=False):
+	"""Save data into an htf5 format.  This is faster than saving to 
+	.mat files.  Note this this code assumes that the data is already cast,
+	unless it explicitly told to cast  the data by setting cast=True.
+	
+	:Parameters:
+		**data** -- Standard python data dictionary with data to be saved.
+		
+		**savedir** -- The directory where the resultant hft5 file should be 				saved.  Include a '/' at the end, like this: /path/to/save/
+		
+		**filename** -- The name for the file.
+		
+		**cast = {True, False}** -- Optional. If True the data will be cast 		to float form before saving.  This is necessary if the data has not 		yet been cast.
+	"""
+	#a list of data entries that will need to be casted.
+	toCast = ['x', 'y', 'lon', 'lat', 'h', 'a1u', 'a2u']
+	#a list of data entries that would not need to be cast to floats
+	noCast = ['nv', 'nbe']
+	#make sure there are not any 'unsavable' structures in the dictionary
+	key = data.keys()
+	#initialize list of items not to be saved.
+	noWrite = []
+	for i in key:
+		try:
+			data[i].shape
+		except:
+			noWrite.append(i)
+	#cast the data to float form.
+	if cast:
+		for i in toCast:
+			data[i] = data[i].astype('float32')
+	#get the dictionary that will be saved ready.
+	sdict = {i:data[i] for i in key if i not in noWrite}
+	#initalize a dictionary of random variables.  This serves 
+	#only to make it possible to do the following in a condensed form
+	rdata = {}
+	for i in sdict.keys():
+		rdata[i] = 4
+	
+	#save to h5 file.
+	f = h5py.File(savedir + filename + '.h5py', 'w')
+	for i in sdict.keys():
+		if i not in noCast:
+			rdata[i] = f.create_dataset(i, sdict[i].shape, 'f')
+			rdata[i][...] = sdict[i]
+		else:
+			rdata[i] = f.create_dataset(i, sdict[i].shape, 'i')
+			rdata[i][...] = sdict[i]
+	f.close()
 def calc_speed(data):
     """
     Calculates the speed from ua and va
     
-    @Parameters:
-        data: the standard python data dictionary
+    :Parameters:
+        **data** -- the standard python data dictionary
 
-    Note: We use numexpr here because, with multiple threads, it is
+    .. note:: We use numexpr here because, with multiple threads, it is
     about 30 times faster than direct calculation.        
     """
     #name required variables
@@ -517,11 +583,9 @@ def calc_speed(data):
     return data
     
 def calc_energy(data):
-    """
-    Calculate the energy of the entire system.
-    
-    @Parameters:
-        data: the standard python data dictionary
+    """Calculate the energy of the entire system.
+
+    :Parameters: **data** -- the standard python data dictionary
     """
     #name relevant variables
     x = data['x']
@@ -554,5 +618,5 @@ def calc_energy(data):
     print ek.shape
     return data
         
-
+  
     
