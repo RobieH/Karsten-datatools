@@ -17,7 +17,7 @@ while True:
 		#get the latest run
 		num = []
 		for i in files:
-			num.append(int(i[-4:]))
+			num.append(int(i[-7:-3]))
 	
 		index = num.index(max(num))
 
