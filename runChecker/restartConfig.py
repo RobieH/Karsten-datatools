@@ -1,7 +1,7 @@
 from scipy.io import netcdf
 import glob
 
-datadir = '/home/daugue6/capeislerestart/output/'
+datadir = '/output/'
 #get the correct restart file, the second newest one (if there is more than one)
 files = glob.glob(datadir + "*.nc")
 #find the restart files
@@ -26,8 +26,11 @@ ind = Times.shape[0] - 1
 
 #join the elements of the list into a single string
 
-time = ""
+time = "\'"
 for i in Times[ind,:]:
-	time += i
+	if i == 'T': 
+		time += '\s'
+	else:
+		time += i
+time += "\'"
 
-print time
