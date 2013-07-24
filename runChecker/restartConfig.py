@@ -1,7 +1,7 @@
 from scipy.io import netcdf
 import glob
 
-datadir = '/output/'
+datadir = '/home/daugue6/capeislerestart/output/'
 #get the correct restart file, the second newest one (if there is more than one)
 files = glob.glob(datadir + "*.nc")
 #find the restart files
@@ -14,7 +14,7 @@ for i in files:
 
 filenums = []
 for i in restart_files:
-	filenums.append(int(i[-4:]))
+	filenums.append(int(i[-7:-3]))
 
 latest = filenums.index(max(filenums))
 
@@ -30,4 +30,4 @@ time = ""
 for i in Times[ind,:]:
 	time += i
 
-
+print time
