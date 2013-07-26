@@ -9,6 +9,9 @@ restart_files = []
 for i in files:
 	if "restart" in i:
 		restart_files.append(i)
+#we want to make sure that we are not restarting from a point that is a nan
+
+#look at the latest ordinary file
 
 #get the latest restart file
 
@@ -28,7 +31,7 @@ ind = Times.shape[0] - 1
 
 time = "\'"
 for i in Times[ind,:]:
-	if i == 'T': 
+	if i == 'T':
 		time += '\s'
 	else:
 		time += i
