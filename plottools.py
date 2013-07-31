@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
 """
+Front Matter
+=============
+
 Created on Mon Jul  8 21:20:34 2013
 
-@author: robie
+Author: Robie Hennigar
 
 A number of functions for plotting various data features.
+
+Requirements
+=============
+
+Absolutely Neccesary:
+
+* Basemap 
+* Matplotlib version 1.3.0
+* datatools
+
+.. note:: If the user is using Anaconda, Basemap will likely have to be installed manually. The reason for this is because installing Basemap in the normal Anaconda way will overwrite matplotlib version 1.3.0, which is required for the code to work.
+
+Functions
+========= 
 """
 import numpy as np
 import matplotlib.tri as mplt
@@ -16,14 +33,20 @@ from multiprocessing import Pool
 
 def clearall():
     """clear all globals
-    Not intended for user use.
+    
+    .. warning:: Not intended for user use.
     """
     for uniquevar in [var for var in globals().copy() if var[0] != "_" and var != 'clearall']:
         del globals()[uniquevar]
         
 def energy_plot(data, show=True):
     """
-    Produces a plot of the kinetic energy as a function of time.  
+    Produces a plot of the kinetic energy as a function of time.
+    
+    :Parameters:
+    	**data** -- Typical python data dictionary.
+    	
+    	**show = {True, False}** -- Optional.  If True, the resultant plot will be displayed.  
     """
     #see if EK has already been calculated
     try:
@@ -44,9 +67,10 @@ def el_plot(data, Map=False, show=True):
     """
     Plot the elevation for the region from the last time series
     
-    @Parameters:
-        data: the standard python data dictionary
-        Map = {True, False} (optional): Optional argument.  If True,
+    :Parameters:
+        **data** -- the standard python data dictionary
+        
+        **Map** -- {True, False} (optional): Optional argument.  If True,
             the elevation will be plotted on a map.  
     """
     trigrid = data['trigrid']
@@ -74,10 +98,12 @@ def speed_plot(data, Map=False, show=True):
     """
     Plot the speed in each element for the last time series
     
-    @Parameters: 
-        data: standard python data dictionary
-        Map = {True, False} (optional): If True, the plot will include a map
-        show = {True, False} (optional): If True, the plot will be 
+    :Parameters: 
+        **data** -- standard python data dictionary
+        
+        **Map = {True, False} (optional)** If True, the plot will include a map
+        
+        **show = {True, False} (optional)** -- If True, the plot will be 
             displayed.  If False, no plot will be displayed.
     """
     trigrid = data['trigrid']
@@ -110,7 +136,7 @@ def speed_plot(data, Map=False, show=True):
 
 def mass_tri_plot(data, savedir, name='plot', Type='speed', Map=False):
     """
-    Plots all time series.
+    Plots all time series.  Makes use of multiprocessing for speed.
     """
     trigrid = data['trigrid']
     #get the data to plot

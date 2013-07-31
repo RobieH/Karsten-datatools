@@ -4,7 +4,7 @@ from datatools import *
 from scipy.io import netcdf as nc
 
 datadir = '/home/robie/Desktop/Practice/'
-saveName = '/home/robie/Desktop/parSave.nc'
+savedir = '/home/robie/Desktop/'
 style = 'mat'
 #style ='nc'
 
@@ -84,16 +84,23 @@ if __name__ == '__main__':
 	#file using python, thus we investigate two options: (a) writing to
 	#several .mat files (as many as there are processors) and (b) writing
 	#to and updating a .nc file.
+	
+	if style == 'mat':
+		#we are going to save as many mat files as there are processors.
+		saveFile = savedir + str(rank)
+		sio.savemat(saveFile, rdata, oned_as='column')
+		comm.Barrier()
+		if rank == 0: print 'Save complete.'
+	else:
+		print 'hi'
+		#we are saving the data in the netcdf format.
+			
+
 
 		#initialize netcdf file
-		ncid = nc.netcdf_file(saveName, 'w')
-		for j in rdata.keys():
-			ncid.createVariable(j, 
+		#ncid = nc.netcdf_file(saveName, 'w')
+		#for j in rdata.keys():
+		#	ncid.createVariable(j, 
 			
-	comm.Barrier()	
-	#gather the data
-#	if rank != 0:
-#		sio.savemat(saveName, rdata)
-#	toSave = [key[i] for i in entries if key[i] not in invalid]
-#	comm.Barrier()
-	
+	#comm.Barrier()	
+

@@ -29,8 +29,3 @@ if __name__ == '__main__':
 	comm.Barrier()
 	for i in rows:
 		save_plot(i)
-    		
-	
-		
-		
-			
