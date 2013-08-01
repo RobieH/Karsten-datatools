@@ -36,7 +36,7 @@ class probe:
     def _line_count(self):
         lines = 0
         with open(self.filename, 'r') as f:
-           m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)    print indiv_locs
+           m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
 
         readline = m.readline
         while readline():
