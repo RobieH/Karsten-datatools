@@ -4,6 +4,7 @@ import mmap
 import os
 import re
 import scipy.io as sio
+import multiprocessing
 class probe:
     """Creates a probe object, allowing the user to efficiently and
     easily load probe data files.  Takes as input the path to the file.
@@ -35,7 +36,8 @@ class probe:
     def _line_count(self):
         lines = 0
         with open(self.filename, 'r') as f:
-           m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
+           m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)    print indiv_locs
+
         readline = m.readline
         while readline():
             lines += 1
@@ -77,9 +79,26 @@ def load_probe(location_files):
     sio.savemat(saveName, mdict=mdict, oned_as='column')
 
 if __name__ == '__main__':
-    datadir = '/path/to/directory/'
+    datadir = '/home/robie/Documents/python/probes/'
     #get list of probe files in the directory.
     specifer = 'L*'
     files = glob.glob(datadir + specifer)
     #break the files up into the individual locations
+    loc = []
+    for File in files:
+        num = re.search("\d",File).start()
+        end = File.index('_')
+        loc.append(int(File[num:end]))
+    num_locs = max(loc)
+    data_entries = len(files)/num_locs
 
+    loc = np.array(loc)
+    data_entries = np.unique(loc)
+    indiv_locs = []
+    for i in xrange(data_entries):
+        curr_loc = np.where(loc == i + 1)[0]
+        indiv_locs.append([files[j] for j in curr_loc])
+
+    #use multiprocessing to save the probe files
+    pool = multiprocessing.Pool()
+    pool.map(load_probe, indiv_locs)
