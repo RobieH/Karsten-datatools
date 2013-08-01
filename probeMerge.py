@@ -3,8 +3,13 @@ import glob
 import mmap
 import os
 import re
-from datetime import datetime, timedelta
+import scipy.io as sio
 class probe:
+    """Creates a probe object, allowing the user to efficiently and
+    easily load probe data files.  Takes as input the path to the file.
+    .. Note: The probe files should be saved with the following
+    naming convention: nameNUMBER_DATA.  For example, Location1_ua is
+    an appropriate name."""
 
     def __init__(self, filename):
         self.filename = filename
@@ -17,6 +22,7 @@ class probe:
         self._line_count()
         self._data_name()
         self._array_data()
+        self._location()
 
     def print_file(self):
         with open(self.filename, 'r') as f:
@@ -52,10 +58,28 @@ class probe:
         for i in xrange(self.size):
             row = m.readline()
             data[i,...] = [float(j) for j in row.split()]
-        print (b-a).seconds, (b-a).microseconds
         self.data = data
 
     def _location(self):
         num = re.search("\d",self.filename).start()
         end = self.filename.index('_')
         self.location = self.filename[num:end]
+
+def load_probe(location_files):
+    mdict = {}
+    location = ''
+    for filename in location_files:
+        probe_data = probe(filename)
+        probe_data.load()
+        mdict[probe_data.data_name] = probe_data.data
+        location = probe_data.location
+    saveName = 'Location_' + str(location)
+    sio.savemat(saveName, mdict=mdict, oned_as='column')
+
+if __name__ == '__main__':
+    datadir = '/path/to/directory/'
+    #get list of probe files in the directory.
+    specifer = 'L*'
+    files = glob.glob(datadir + specifer)
+    #break the files up into the individual locations
+
