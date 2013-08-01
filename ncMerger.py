@@ -12,14 +12,21 @@ import glob
 import bisect
 import os
 from datetime import datetime, timedelta
+<<<<<<< HEAD
 import h5py
+=======
+>>>>>>> 983e1d4c36ddfb34bac5ed6f30deabe5a7907200
 
 #enter the data directory
-datadir = '/home/robie/Documents/python/'
+datadir = '/home/rkarsten/common_folder/frank/forcesite_3.1_16_2D_sep142011/output/'
 #enter the number of days of data per .mat file
 numDays = 0.5
 #enter the directory where the .mat files should be saved
+<<<<<<< HEAD
 savedir = '/home/robie/Desktop/Python/'
+=======
+savedir = '/home/robieh/scratch/python_data/'
+>>>>>>> 983e1d4c36ddfb34bac5ed6f30deabe5a7907200
 #enter name for .mat files
 filename = "merged"
 
@@ -181,6 +188,7 @@ if __name__ == '__main__':
 	b = datetime.now()
 	print "saving"
 	sio.savemat(savedir + filename, mdict, oned_as='column')
+<<<<<<< HEAD
 	#f = h5py.File(savedir+filename+'.h5py', 'w')
 	rdata = {}
 	for i in mdict.keys():
@@ -193,6 +201,8 @@ if __name__ == '__main__':
 #			rdata[i] = f.create_dataset(i, mdict[i].shape, 'i')
 #			rdata[i][...] = mdict[i]
 #	f.close()
+=======
+>>>>>>> 983e1d4c36ddfb34bac5ed6f30deabe5a7907200
 	d = datetime.now()
 	c = b - a
 	e = d - b
