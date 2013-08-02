@@ -101,10 +101,10 @@ class probe:
             i += 1
         row = m.readline()
         ocean_depth = float(row.split()[-1])
-        delta_z = ocean_depth / self.num_cols
-        z = np.empty(self.num_cols)
+        delta_z = ocean_depth / (self.num_cols - 1)
+        z = np.empty(self.num_cols-1)
 
-        for i in xrange(self.num_cols):
+        for i in xrange(self.num_cols-1):
             z[i] = i * delta_z
         self.z = z
 
@@ -130,9 +130,9 @@ def load_probe(location_files):
     sio.savemat(saveName, mdict=mdict, oned_as='column')
 
 if __name__ == '__main__':
-    datadir = '/home/robie/Documents/python/Probes/'
+    datadir = '/home/robie/Documents/python/probes/'
     #get list of probe files in the directory.
-    specifer = 'S*'
+    specifer = 'L*'
     files = glob.glob(datadir + specifer)
     #break the files up into the individual locations
     loc = []
