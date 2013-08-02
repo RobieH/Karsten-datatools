@@ -20,6 +20,8 @@ class probe:
         self.data_name = ''
 
     def load(self):
+        """load all the necessary information about the probe"""
+
         self._line_count()
         self._data_name()
         self._get_dim()
@@ -28,6 +30,8 @@ class probe:
         self._depth_array()
 
     def print_file(self):
+        """Print the data from the file on the terminal"""
+
         with open(self.filename, 'r') as f:
             m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
         data = m.readline()
@@ -36,6 +40,9 @@ class probe:
             data = m.readline()
 
     def _line_count(self):
+        """Determine the number of lines in the file, disregarding
+        the header."""
+
         lines = 0
         with open(self.filename, 'r') as f:
            m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
@@ -46,10 +53,14 @@ class probe:
         self.size = lines - 18
 
     def _data_name(self):
+        """Determine the name of the data (i.e. ua, va, el)"""
+
         index = self.filename.index('_') + 1
         self.data_name = self.filename[index:]
 
     def _get_dim(self):
+        """Determine the dimension of the data"""
+
         with open(self.filename, 'r') as f:
             m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
         i = 0
@@ -61,6 +72,7 @@ class probe:
         m.close()
 
     def _array_data(self):
+        """load the data from the file and place it in arrays"""
         with open(self.filename, 'r') as f:
            m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
         i = 0
@@ -98,6 +110,8 @@ class probe:
 
 
     def _location(self):
+        """Determine the probe location/specifier"""
+
         num = re.search("\d",self.filename).start()
         end = self.filename.index('_')
         self.location = self.filename[num:end]
