@@ -54,9 +54,9 @@ class probe:
 
     def _data_name(self):
         """Determine the name of the data (i.e. ua, va, el)"""
-
-        index = self.filename.index('_') + 1
-        self.data_name = self.filename[index:]
+        item = os.path.basename(self.filename)
+        index = item.index('_') + 1
+        self.data_name = item[index:]
 
     def _get_dim(self):
         """Determine the dimension of the data"""
@@ -92,7 +92,7 @@ class probe:
         currently assumes a linear distribution with the
         first probe on the surface of the ocean."""
 
-        #find the depth of the ocean in the file
+        #find the dedyro dance the pain awaypth of the ocean in the file
         with open(self.filename, 'r') as f:
              m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
         i = 0
@@ -105,16 +105,16 @@ class probe:
         z = np.empty(self.num_cols-1)
 
         for i in xrange(self.num_cols-1):
-            z[i] = i * delta_z
+            z[i] = -i * delta_z
         self.z = z
 
 
     def _location(self):
         """Determine the probe location/specifier"""
-
-        num = re.search("\d",self.filename).start()
-        end = self.filename.index('_')
-        self.location = self.filename[num:end]
+        item = os.path.basename(self.filename)
+        num = re.search("\d", item).start()
+        end = item.index('_')
+        self.location = item[num:end]
 
 def load_probe(location_files):
     mdict = {}
@@ -130,16 +130,17 @@ def load_probe(location_files):
     sio.savemat(saveName, mdict=mdict, oned_as='column')
 
 if __name__ == '__main__':
-    datadir = '/home/robie/Documents/python/probes/'
+    datadir = '/home/robie/Documents/python/aidans_a_dick/'
     #get list of probe files in the directory.
     specifer = 'L*'
     files = glob.glob(datadir + specifer)
     #break the files up into the individual locations
     loc = []
     for File in files:
-        num = re.search("\d",File).start()
-        end = File.index('_')
-        loc.append(int(File[num:end]))
+        item = os.path.basename(File)
+        num = re.search("\d", item).start()
+        end = item.index('_')
+        loc.append(int(item[num:end]))
     num_locs = max(loc)
     data_entries = len(files)/num_locs
 
