@@ -188,7 +188,6 @@ def node_finder(XY, neiDir, grdDir):
         nv_tmp[i,:] = m.readline().split()
 
     nv = nv_tmp[:,1:4].astype(int)
-    print nv
     trigrid = mplt.Triangulation(lon_lat[:,0], lon_lat[:,1], nv - 1)
     trifinder = mplt.TrapezoidMapTriFinder(trigrid)
 
