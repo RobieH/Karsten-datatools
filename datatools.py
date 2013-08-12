@@ -42,7 +42,7 @@ import glob
 from scipy.io import netcdf
 import scipy.io as sio
 import mmap
-import re
+import os
 
 
 def loadnc(datadir, singlename=None, dim='3D'):
@@ -66,6 +66,9 @@ def loadnc(datadir, singlename=None, dim='3D'):
 
     #initialize a dictionary for the data.
     data = {}
+    #store the filepath in case it is needed in the future
+    data['filepath'] = filepath
+
     #load data
     ncid = netcdf.netcdf_file(filepath, 'r')
     data['x'] = ncid.variables['x'].data
@@ -88,6 +91,10 @@ def loadnc(datadir, singlename=None, dim='3D'):
         data['u'] = ncid.variables['u'].data
         data['v'] = ncid.variables['v'].data
         data['ww'] = ncid.variables['ww'].data
+        data['aw0'] = np.transpose(ncid.variables['aw0'].data)
+        data['awx'] = np.transpose(ncid.variables['awx'].data)
+        data['awy'] = np.transpose(ncid.variables['awy'].data)
+
     elif (dim != '2D' and dim != '3D'):
         raise Exception("Dim must be '2D', '3D', or absent.")
     ncid.close()
@@ -106,7 +113,7 @@ def loadnc(datadir, singlename=None, dim='3D'):
     if glob.glob(datadir + "../*_long.dat"):
     	long_matches.append(glob.glob(datadir + "../*_long.dat")[0])
     if glob.glob(datadir + "../*_lat.dat"):
-    	lat_matches.append(glob.glob(datadir + "*../_lat.dat")[0])
+    	lat_matches.append(glob.glob(datadir + "../*_lat.dat")[0])
     if glob.glob(datadir + "../../*_long.dat"):
     	long_matches.append(glob.glob(datadir + "../../*_long.dat")[0])
     if glob.glob(datadir + "../../*_lat.dat"):
@@ -124,6 +131,111 @@ def loadnc(datadir, singlename=None, dim='3D'):
     data['trigrid'] = mplt.Triangulation(data['lon'], data['lat'], \
         data['nv'])
     return data
+
+def load_timeslice(datadir, start, end, singlename=None,  dim = '2D'):
+    """Loads a timeslice of data from a .nc file for the time series between start
+    and end, which are provided as indices.
+
+    :Parameters:
+        **datadir** -- the directory where the .nc file is located.  Be sure to
+            end with a '/'.
+        **start/end** -- the start and end index for time series to be loaded.
+            Remember, python indexing starts at 0, not 1.
+        **singlename** -- Optional.  Specify the name of the file to be loaded.
+        **dim** -- Optional.  Either '2D' or '3D', the dimension of the data file.
+
+    """
+
+    if singlename == None:
+        files = glob.glob(datadir + "*.nc")
+        filepath = files[0]
+    else:
+        filepath = datadir + singlename
+
+    #initalize data dictionary
+    data = {}
+    #store the filepath, in case it is needed in the future
+    data['filepath'] = filepath
+    #make it known the data was loaded using timeslice
+    data['timeslice'] = True
+    #list of things to be loaded
+    toLoad = ['x', 'y', 'nv', 'nbe', 'h', \
+              'a1u', 'a2u', 'siglev', 'siglay', 'time']
+    dims = ['nele', 'node']
+
+    asInt = ['nv', 'nbe']
+    toTranspose = ['nv', 'nbe', 'a1u', 'a2u']
+
+    toTimeCut = ['time', 'ua', 'va', 'zeta']
+
+    if dim == '3D':
+        three_d = ['aw0', 'awx', 'awy']
+        for i in three_d:
+            toLoad.append(i)
+        three_trans = ['aw0', 'awx', 'awy']
+        for i in three_trans:
+            toTranspose.append(i)
+        three_timecut = ['u', 'v', 'ww']
+        for i in three_timecut:
+            toTimeCut.append(i)
+
+    #load data
+    ncid = netcdf.netcdf_file(filepath, 'r')
+    #load the general data that requires no time cuts
+    for i in toLoad:
+        try:
+            if i in asInt:
+                data[i] = np.transpose(ncid.variables[i].data.astype(int) - [1])
+            elif i in toTranspose:
+                data[i] = np.transpose(ncid.variables[i].data)
+            else:
+                data[i] = ncid.variables[i].data
+        except:
+            print i + ' is not an entry in the nc file'
+    #load and timecut the data
+    for i in toTimeCut:
+        try:
+            data[i] = ncid.variables[i].data[start:end,...]
+        except:
+            print 'there was an issue slicing ' + i
+    #load the dimensions
+    for i in dims:
+        data[i] = ncid.dimensions[i]
+    ncid.close()
+
+    #Now we get the long/lat data.  Note that this method will search
+    #for long/lat files in the datadir and up to two levels above
+    #the datadir.
+
+    long_matches = []
+    lat_matches = []
+
+    if glob.glob(datadir + "*_long.dat"):
+    	long_matches.append(glob.glob(datadir + "*_long.dat")[0])
+    if glob.glob(datadir + "*_lat.dat"):
+    	lat_matches.append(glob.glob(datadir + "*_lat.dat")[0])
+    if glob.glob(datadir + "../*_long.dat"):
+    	long_matches.append(glob.glob(datadir + "../*_long.dat")[0])
+    if glob.glob(datadir + "../*_lat.dat"):
+    	lat_matches.append(glob.glob(datadir + "../*_lat.dat")[0])
+    if glob.glob(datadir + "../../*_long.dat"):
+    	long_matches.append(glob.glob(datadir + "../../*_long.dat")[0])
+    if glob.glob(datadir + "../../*_lat.dat"):
+    	lat_matches.append(glob.glob(datadir + "../../*_lat.dat")[0])
+
+    #let's make sure that long/lat files were found.
+    if (len(long_matches) > 0 and len(lat_matches) > 0):
+        data['lon'] = np.loadtxt(long_matches[0])
+        data['lat'] = np.loadtxt(lat_matches[0])
+    else:
+        print "No long/lat files found. Long/lat set to x/y"
+        data['lon'] = data['x']
+        data['lat'] = data['y']
+
+    data['trigrid'] = mplt.Triangulation(data['lon'], data['lat'], \
+        data['nv'])
+    return data
+
 
 def ncdatasort(data):
     """From the nc data provided, common variables are produced.
@@ -244,9 +356,8 @@ def tri_finder(XY, data, nodes=False):
         return indices, nodes
     return indices
 
-
 def interp_vel(XY, triInds, data, numjit=False):
-    """Interpolates velocity data from the known locations to the x, y
+    """Interpolates velocity data from the known locations to the xa, y
     coordinates given in the array XY.
 
     :Parameters:
@@ -365,6 +476,12 @@ def jit_interp_vel(XY, triInds, u, v, uvnodell, a1u, a2u, nbe, nv):
             VI[i,:] = np.nan
             i += 1
     return UI, VI
+
+
+def interp_el(XY, triInds,  data):
+    """Interpolates the elevation to the points XY"""
+    #name relevant variables
+
 
 def get_elements(data, region):
     """Takes uvnodes and a  region (specified by the corners of a
@@ -496,30 +613,72 @@ def regioner(region, data, name=None, savedir=None, dim='2D'):
         data['element_index'] = element_index
         data['nbe'] = nbe_new
         data['nv'] = nv_new
-        data['a1u'] = a1u[element_index, :]
-        data['a2u'] = a2u[element_index, :]
-        data['h'] = data['h'][node_index]
-        data['uvnodell'] = data['uvnodell'][element_index,:]
-        data['x'] = data['x'][node_index]
-        data['y'] = data['y'][node_index]
-        data['zeta'] = data['zeta'][:,node_index]
-        data['ua'] = data['ua'][:,element_index]
-        data['va'] = data['va'][:,element_index]
-        data['lon'] = data['lon'][node_index]
-        data['lat'] = data['lat'][node_index]
+        try:
+            #if the data was loaded using load_timeslice,
+            #we do not wish to alter it.
+            data['timeslice']
+
+            data['a1u'] = a1u[element_index, :]
+            data['a2u'] = a2u[element_index, :]
+            data['h'] = data['h'][node_index]
+            data['uvnodell'] = data['uvnodell'][element_index,:]
+            data['x'] = data['x'][node_index]
+            data['y'] = data['y'][node_index]
+            data['zeta'] = data['zeta'][:,node_index]
+            data['ua'] = data['ua'][:,element_index]
+            data['va'] = data['va'][:,element_index]
+            data['lon'] = data['lon'][node_index]
+            data['lat'] = data['lat'][node_index]
+            if dim=='3D':
+                data['u'] = data['u'][:,:,element_index]
+                data['v'] = data['v'][:,:,element_index]
+                data['ww'] = data['ww'][:,:,element_index]
+
+        except:
+            data = _cut_data(data, node_index, element_index, dim)
         data['trigrid'] = mplt.Triangulation(data['lon'], data['lat'], \
             data['nv'])
-        #take care of extra variables if data file is 3D
-        if dim=='3D':
 
-            data['u'] = data['u'][:,:,element_index]
-            data['v'] = data['v'][:,:,element_index]
-            data['ww'] = data['ww'][:,:,element_index]
         #save the data if that was requested.
         if savedir != None and name != None:
             mat_save(data, regionData)
     return data
+def _cut_data(data, node_index, element_index, dim):
+    """Routine used by regioner.  Cuts the data for the elements specified by
+    node_index and element_index."""
 
+    filepath = data['filepath']
+    #things cut at elements with the first index
+    eleCutForward = ['a1u', 'a2u']
+    #things cut at elements with the last index
+    eleCutBack = ['ua', 'va']
+    if dim == '3D':
+        alsoCutB = ['u', 'v', 'ww']
+        alsoCutF = ['aw0', 'awx', 'awy']
+        for i in alsoCutB:
+            eleCutBack.append(i)
+        for i in alsoCutF:
+            eleCutForward.append(i)
+
+    nodeCut = ['zeta', 'lon', 'lat', 'h', 'x', 'y']
+    #load nc file
+    ncid = netcdf.netcdf_file(filepath, 'r')
+    #cut element-based data
+    print 'cuting element data, forward'
+    for i in eleCutForward:
+       data[i] = np.transpose(ncid.variables[i].data)[element_index,...]
+       print i
+    print 'cutting element data, back'
+    for i in eleCutBack:
+        data[i] = ncid.variables[i].data[...,element_index]
+        print i
+    #cut node-based data
+    print 'cutting node data'
+    for i in nodeCut:
+        data[i] = ncid.variables[i].data[..., node_index]
+        print i
+
+    return data
 def mat_save(data, saveDirName, dim='2D'):
     """
     Save .nc data to a mat file.
@@ -674,7 +833,6 @@ def size_check(datadir):
 
 	:Parameters:
 		**datadir** -- The directory where the .nc files are contained.
-
 	"""
 	files = glob.glob(datadir + '*.nc')
 	numFiles = len(files)
@@ -731,6 +889,7 @@ def nan_index(data, dim='2D'):
 	key = ['ua', 'va']
 	if dim == '3D':
 		three_d =['u', 'v', 'ww']
+        key.append(i for i in three_d)
 
 	for i in xrange(data['time'].shape[0]):
 		checkArray = []
@@ -742,7 +901,7 @@ def nan_index(data, dim='2D'):
 		if True in checkArray:
 			nanInd.append(i)
 	#calculate percentage of nans
-	nanFrac = len(nanInd)/len(time)
+	nanFrac = len(nanInd)/data['time'].shape[0]
 	return nanInd, nanFrac
 
 
@@ -831,8 +990,8 @@ dim='2D'):
                 ltt = len(time_temp)
 
                 #discover if there is any overlap in time series
-                start = bisect.bisect_left(Time, time_tmp[0])
-
+                start = bisect.bisect_left(Time, time_temp[0])
+                start_ind = start
                 #determine if there was a match.  Note that if there was
                 #no match, bisect returns the last index.
 
@@ -870,7 +1029,7 @@ dim='2D'):
                 ltt = len(time_temp)
 
                 #discover if there is any overlap in time series
-                start = bisect.bisect_left(Time, time_tmp[0])
+                start = bisect.bisect_left(Time, time_temp[0])
 
                 #determine if there was a match.  Note that if there was
                 #no match, bisect returns the last index.
@@ -894,7 +1053,7 @@ dim='2D'):
                     VA[nt:numT,:] = va_temp
                     ZETA[nt:numT,:] = zeta_temp
                     U[nt:numT,...] = u_temp
-                    V[nt:numT,...] = v_Temp
+                    V[nt:numT,...] = v_temp
                     WW[nt:numT,...] = ww_temp
                     nt += ltt
             print "Loaded file " + str(i+1) + " of " + str(numFiles) + "."
@@ -913,7 +1072,7 @@ dim='2D'):
         for i in xrange(1,numFiles):
             #load the current file
             ncid = netcdf.netcdf_file(files[ordered_time[i]],'r')
-            time_temp = ncid1.variables['time'].data
+            time_temp = ncid.variables['time'].data
             ua_temp = ncid.variables['ua'].data
             va_temp = ncid.variables['va'].data
             zeta_temp = ncid.variables['zeta'].data
@@ -1000,7 +1159,6 @@ dim='2D'):
     if clean_nans:
         nanInd,  nanFrac = nan_index(data, dim=dim)
         nan_ind = tuple(nanInd)
-        done = False
         UA = np.delete(UA, nan_ind, 0)
         VA = np.delete(VA, nan_ind, 0)
         Time = np.delete(Time, nan_ind)
