@@ -5,11 +5,11 @@ import os
 import re
 import scipy.io as sio
 import multiprocessing
-from datetime import datetime, timedelta
 
 class probe:
     """Creates a probe object, allowing the user to efficiently and
     easily load probe data files.  Takes as input the path to the file.
+
     .. Note: The probe files should be saved with the following
     naming convention: nameNUMBER_DATA.  For example, Location1_ua is
     an appropriate name."""
@@ -25,9 +25,9 @@ class probe:
         self._line_count()
         self._data_name()
         self._get_dim()
+        self._depth_array()
         self._array_data()
         self._location()
-        self._depth_array()
 
     def print_file(self):
         """Print the data from the file on the terminal"""
@@ -86,13 +86,15 @@ class probe:
             data[i,...] = row.split()
         self.time = data[:,0]
         self.data = data[:,1:]
+        if self.data_name == 'el':
+            self.data = self.data + self.ocean_depth
 
     def _depth_array(self):
         """creates an array with the probe depths.
         currently assumes a linear distribution with the
         first probe on the surface of the ocean."""
 
-        #find the dedyro dance the pain awaypth of the ocean in the file
+        #find the depth of the ocean in the file
         with open(self.filename, 'r') as f:
              m = mmap.mmap(f.fileno(),0,prot=mmap.PROT_READ)
         i = 0
@@ -100,8 +102,8 @@ class probe:
             m.readline()
             i += 1
         row = m.readline()
-        ocean_depth = float(row.split()[-1])
-        delta_z = ocean_depth / (self.num_cols - 1)
+        self.ocean_depth = float(row.split()[-1])
+        delta_z = self.ocean_depth / (self.num_cols - 1)
         z = np.empty(self.num_cols-1)
 
         for i in xrange(self.num_cols-1):
