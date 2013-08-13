@@ -86,7 +86,7 @@ class probe:
             data[i,...] = row.split()
         self.time = data[:,0]
         self.data = data[:,1:]
-        if self.data_name == 'el':
+        if 'el' in self.data_name:
             self.data = self.data + self.ocean_depth
 
     def _depth_array(self):
